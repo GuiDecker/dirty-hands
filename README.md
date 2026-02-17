@@ -1,6 +1,6 @@
-# AutoGesture - MVP (Opção 1)
+# Dirty Hands 🖐️
 
-Motor de controle por gestos - **MVP funcional** seguindo guia passo-a-passo técnico.
+Controle de computador por gestos de mão - navegue e clique sem tocar no mouse. Perfeito para ler HQs ou usar o PC com as mãos ocupadas!
 
 ## 🎯 Objetivo do MVP
 
@@ -15,8 +15,8 @@ Criar um sistema funcional que:
 ## 🏗️ Estrutura do Projeto
 
 ```
-autoGesture/
-├── main.py                 # Loop principal (MVP)
+dirty-hands/
+├── main.py                 # Loop principal
 ├── vision/
 │   └── hand_tracker.py    # Detecção de mãos (MediaPipe)
 ├── gestures/
