@@ -165,7 +165,3 @@ Edite `utils/config.py` para ajustar:
 ## 🏁 Status
 
 ✅ **MVP Completo** - Pronto para testes e próximos incrementos
-
----
-
-**Próximo passo**: Escolher incremento 1 (Filtros e suavização) ou testar o MVP atual.
