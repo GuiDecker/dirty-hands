@@ -1,0 +1,11 @@
+# AutoGesture - Dependências (MVP)
+# Python 3.10+
+
+# Visão computacional
+opencv-python
+mediapipe==0.10.8  # Versão compatível com mp.solutions.hands (menor que 0.10.14)
+numpy
+
+# Controle de input do SO
+pyautogui
+
