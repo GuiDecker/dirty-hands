@@ -13,20 +13,30 @@ class GestureEngine:
     INDEX_TIP = 8
     THUMB_TIP = 4
     MIDDLE_TIP = 12
+    RING_TIP = 16
+    PINKY_TIP = 20
     INDEX_PIP = 6
     MIDDLE_PIP = 10
+    RING_PIP = 14
+    PINKY_PIP = 18
+    
+    # Dedos que contam para velocidade do scroll (polegar excluído): (tip, pip)
+    SCROLL_FINGERS = [
+        (INDEX_TIP, INDEX_PIP),
+        (MIDDLE_TIP, MIDDLE_PIP),
+        (RING_TIP, RING_PIP),
+        (PINKY_TIP, PINKY_PIP),
+    ]
     
     def __init__(self):
         self.history = deque(maxlen=10)
         self.last_click = 0
         self.scroll_active = False
-        self.scroll_history = deque(maxlen=5)
         
         self.click_cooldown = config.CLICK_COOLDOWN
         self.pinch_threshold = config.PINCH_THRESHOLD
         self.swipe_threshold = config.SWIPE_THRESHOLD
         self.swipe_velocity_threshold = config.SWIPE_VELOCITY_THRESHOLD
-        self.scroll_gesture_threshold = config.SCROLL_GESTURE_THRESHOLD
         self.scroll_direction_threshold = config.SCROLL_DIRECTION_THRESHOLD
     
     def update(self, landmarks):
@@ -47,23 +57,17 @@ class GestureEngine:
         if swipe_action:
             actions.append(swipe_action)
         
-        scroll_gesture = self._detect_scroll_gesture(landmarks)
-        if scroll_gesture:
-            if scroll_gesture == "START_SCROLL" and not self.scroll_active:
-                scroll_info = self._get_scroll_info(landmarks)
-                if scroll_info:
-                    direction, velocity = scroll_info
-                    actions.append(("START_SCROLL", direction, velocity))
-                    self.scroll_active = True
-            elif scroll_gesture == "STOP_SCROLL" and self.scroll_active:
+        scroll_result = self._detect_scroll_gesture(landmarks)
+        if scroll_result:
+            gesture_type, direction, velocity = scroll_result
+            if gesture_type == "START_SCROLL" and not self.scroll_active:
+                actions.append(("START_SCROLL", direction, velocity))
+                self.scroll_active = True
+            elif gesture_type == "STOP_SCROLL" and self.scroll_active:
                 actions.append(("STOP_SCROLL",))
                 self.scroll_active = False
-                self.scroll_history.clear()
-            elif self.scroll_active:
-                scroll_info = self._get_scroll_info(landmarks)
-                if scroll_info:
-                    direction, velocity = scroll_info
-                    actions.append(("UPDATE_SCROLL", direction, velocity))
+            elif gesture_type == "UPDATE_SCROLL" and self.scroll_active:
+                actions.append(("UPDATE_SCROLL", direction, velocity))
         
         self.history.append((index_tip.x, index_tip.y, time.time()))
         return actions
@@ -91,79 +95,55 @@ class GestureEngine:
         return None
     
     def _detect_scroll_gesture(self, landmarks):
-        """Detecta gesto de scroll: dois dedos estendidos"""
+        """
+        Detecta gesto de scroll por orientação da mão e quantidade de dedos.
+        - Mão para cima (dedos estendidos para cima) = scroll para cima.
+        - Mão para baixo (dedos estendidos para baixo) = scroll para baixo.
+        - Velocidade = número de dedos estendidos (1 a 4), excluindo o polegar.
+        Retorna (tipo_gesto, direção, velocidade) ou None.
+        """
         index_tip = landmarks.landmark[self.INDEX_TIP]
         index_pip = landmarks.landmark[self.INDEX_PIP]
-        middle_tip = landmarks.landmark[self.MIDDLE_TIP]
-        middle_pip = landmarks.landmark[self.MIDDLE_PIP]
-        
-        index_extended = index_tip.y < index_pip.y
-        middle_extended = middle_tip.y < middle_pip.y
-        finger_distance = abs(index_tip.x - middle_tip.x) + abs(index_tip.y - middle_tip.y)
-        fingers_close = finger_distance < self.scroll_gesture_threshold
-        
-        if index_extended and middle_extended and fingers_close:
-            return "START_SCROLL"
-        elif self.scroll_active:
-            return "STOP_SCROLL"
-        return None
-    
-    def _get_scroll_info(self, landmarks):
-        """Detecta direção e velocidade do scroll baseado na posição Y dos dedos"""
-        index_tip = landmarks.landmark[self.INDEX_TIP]
-        middle_tip = landmarks.landmark[self.MIDDLE_TIP]
-        
-        avg_y = (index_tip.y + middle_tip.y) / 2
-        self.scroll_history.append((avg_y, time.time()))
-        
-        if len(self.scroll_history) < 2:
-            if avg_y < config.SCROLL_UP_ZONE:
-                return ("UP", config.SCROLL_UP_BASE_VELOCITY)
-            elif avg_y > 0.6:
-                return ("DOWN", config.SCROLL_MIN_VELOCITY)
-            return None
-        
-        initial_y, initial_time = self.scroll_history[0]
-        current_y = avg_y
-        current_time = time.time()
-        
-        dy = current_y - initial_y
-        dt = current_time - initial_time
-        
-        if dt == 0:
-            return None
-        
-        velocity_y = abs(dy) / dt
-        min_velocity = config.SCROLL_MIN_VELOCITY
-        max_velocity_threshold = config.SCROLL_MAX_VELOCITY_THRESHOLD
-        
-        if velocity_y >= max_velocity_threshold:
-            normalized_velocity = 1.0
-        elif velocity_y <= 0:
-            normalized_velocity = min_velocity
+        dy_index = index_tip.y - index_pip.y
+
+        # Direção: indicador define se a mão está "para cima" ou "para baixo"
+        if dy_index < -self.scroll_direction_threshold:
+            direction = "UP"   # ponta do dedo acima da junta = mão ereta para cima
+        elif dy_index > self.scroll_direction_threshold:
+            direction = "DOWN"  # ponta do dedo abaixo da junta = mão ereta para baixo
         else:
-            normalized_velocity = min_velocity + (velocity_y / max_velocity_threshold) * (1.0 - min_velocity)
-        
-        scroll_up_threshold = self.scroll_direction_threshold * config.SCROLL_UP_THRESHOLD_MULTIPLIER
-        
-        if abs(dy) > scroll_up_threshold if dy < 0 else self.scroll_direction_threshold:
-            if dy < 0:
-                boosted_velocity = min(1.0, normalized_velocity * config.SCROLL_UP_VELOCITY_BOOST)
-                return ("UP", boosted_velocity)
+            # Orientação ambígua ou mão aberta → para tudo na hora
+            if self.scroll_active:
+                return ("STOP_SCROLL", None, None)
+            return None
+
+        # Conta quantos dedos (exceto polegar) estão claramente estendidos na direção
+        extended_count = 0
+        for tip_idx, pip_idx in self.SCROLL_FINGERS:
+            tip = landmarks.landmark[tip_idx]
+            pip = landmarks.landmark[pip_idx]
+            if direction == "UP":
+                extended = tip.y < pip.y - self.scroll_direction_threshold * 0.5
             else:
-                return ("DOWN", normalized_velocity)
-        
-        if avg_y < config.SCROLL_UP_ZONE:
-            return ("UP", config.SCROLL_UP_BASE_VELOCITY)
-        elif avg_y > 0.6:
-            return ("DOWN", min_velocity)
-        
-        return None
+                extended = tip.y > pip.y + self.scroll_direction_threshold * 0.5
+            if extended:
+                extended_count += 1
+
+        if extended_count == 0:
+            if self.scroll_active:
+                return ("STOP_SCROLL", None, None)
+            return None
+
+        # Velocidade: 1 dedo = 0.25, 2 = 0.5, 3 = 0.75, 4 = 1.0
+        velocity = (extended_count / 4.0)
+
+        if not self.scroll_active:
+            return ("START_SCROLL", direction, velocity)
+        return ("UPDATE_SCROLL", direction, velocity)
     
     def reset(self):
         """Reseta o estado do engine"""
         self.history.clear()
-        self.scroll_history.clear()
         self.last_click = 0
         self.scroll_active = False
 

@@ -60,13 +60,13 @@ python main.py
 
 ## 🎮 Gestos Disponíveis (MVP)
 
-| Gesto               | Como fazer                                    | Ação                                                                                                           |
-| ------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| **Movimento**       | Mova o dedo indicador                         | Move o cursor                                                                                                  |
-| **Clique**          | Junte polegar + indicador (pinça)             | Clique esquerdo                                                                                                |
-| **Swipe Direita**   | Movimento horizontal rápido para direita      | Próxima página (→)                                                                                             |
-| **Swipe Esquerda**  | Movimento horizontal rápido para esquerda     | Página anterior (←)                                                                                            |
-| **Scroll Infinito** | Estenda indicador + médio juntos (dois dedos) | Scroll contínuo na direção do movimento da mão (cima/baixo). Velocidade proporcional à velocidade do movimento |
+| Gesto               | Como fazer                                | Ação                                                                                                                                                                                                                                |
+| ------------------- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Movimento**       | Mova o dedo indicador                     | Move o cursor                                                                                                                                                                                                                       |
+| **Clique**          | Junte polegar + indicador (pinça)         | Clique esquerdo                                                                                                                                                                                                                     |
+| **Swipe Direita**   | Movimento horizontal rápido para direita  | Próxima página (→)                                                                                                                                                                                                                  |
+| **Swipe Esquerda**  | Movimento horizontal rápido para esquerda | Página anterior (←)                                                                                                                                                                                                                 |
+| **Scroll Infinito** | Mão ereta para cima ou para baixo         | **Para cima:** mão com dedos apontando para cima → scroll para cima. **Para baixo:** mão com dedos apontando para baixo → scroll para baixo. **Velocidade:** 1 a 4 dedos (exceto polegar). **Abrir a mão** → para o scroll na hora. |
 
 ## ⌨️ Controles
 
@@ -79,7 +79,7 @@ Após executar, teste:
 1. ✅ **Mexa a mão** → cursor mexe
 2. ✅ **Junte polegar + indicador** → clique
 3. ✅ **Faça swipe horizontal** → navega páginas
-4. ✅ **Estenda indicador + médio juntos** → scroll infinito ativado (mova a mão para cima/baixo para controlar direção e velocidade)
+4. ✅ **Mão ereta para cima/baixo** (1 a 4 dedos) → scroll; **abrir a mão** (relaxar a pose) → scroll para na hora
 5. ✅ **Verifique estabilidade** → não deve tremer muito
 
 ### Se tremer:
